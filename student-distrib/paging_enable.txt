@@ -1,0 +1,41 @@
+.globl load_pages
+load_pages:
+
+	pushl %ebp
+	movl %esp,%ebp
+	movl 8(%esp), %eax			#put page directory pointer into %eax
+	movl %eax, %cr3				#need to put page directory start pointer in cr3
+
+	movl %cr0, %eax				#Most significant and least significant bits set to 1, turn on paging
+	orl %eax, 0x80000001
+	movl %eax, %cr0
+
+	movl %cr4, %eax
+	orl %eax, 0x8				#bit 4 of CR4 set to one, enables 4MB pages
+	movl %eax, %cr4
+
+	mov %ebp, %esp				#done
+	pop %ebp
+	ret
+
+
+	extern void load_pages(unsigned int*);
+
+	int i;
+	uint32_t page_directory[1024] __attribute__((aligned(4096)));	//make 1024 sized table, aligned to 4kb
+	for(i = 0; i < 1024; i++){
+		page_directory[i] = 0x00000002;								//initially set all page tables to not present, r/w mode
+	}
+
+	uint32_t page_table[1024] __attribute__((aligned(4096)));		//make 1024 table, aligned to 4kb
+	for(i = 0; i<1024; i++){
+		page_table[i] = (i*0x1000)|2;								//supervisor level, r/w, all pages not present (online example used 3, assumes present)
+	}
+
+	page_directory[0] = ((unsigned int)page_table) | 3;				//Put the page table into first entry of page directory
+
+	page_table[1] = (0x1000)|3;										//set video memory to present, second entry in table
+
+	page_directory[1] = (0x400000) | 0x80 | 3;						//0x80 sets Page Size (bit 7) to 1, indicating a 4MB page. Second entry in directory.
+																	//at location 4MB (=2^22 = 0x400000) in memory
+	load_pages(page_directory);

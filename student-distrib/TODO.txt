@@ -1,0 +1,10 @@
+paging
+rtc (drivers)
+pit
+files
+gdt
+idt
+interrupt/exception handlers
+sys_call - vidmap
+
+NOTE: files in todo.zip contain working, but not original, implementations of everything
